@@ -39,7 +39,7 @@ export function change(points: readonly Point[], days = 30): number | null {
 
 /** Multi-source time series of Democratic win probability with keyboard and pointer inspection. */
 export function HistoryChart({ history, sources }: { history: Snapshot['history']; sources: readonly Source[] }) {
-  const [tab, setTab] = useState<Chamber>('sweep');
+  const [tab, setTab] = useState<Chamber>('senate');
   const [cursor, setCursor] = useState<number | null>(null);
   const [announce, setAnnounce] = useState('');
   const [wrapRef, width] = useWidth<HTMLDivElement>();

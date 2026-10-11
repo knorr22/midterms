@@ -53,17 +53,19 @@ describe('Dashboard with research data', () => {
     expect(seatCard(senate)).toHaveTextContent('Majority');
   });
 
-  it('switches trend tabs', async () => {
+  it('defaults to the Senate trend tab and switches tabs', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<Dashboard data={RESEARCH_SNAPSHOT} />);
-    const tab = screen.getByRole('tab', { name: 'Senate' });
-    await user.click(tab);
-    expect(tab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Senate' })).toHaveAttribute('aria-selected', 'true');
+    const sweep = screen.getByRole('tab', { name: 'Sweep' });
+    await user.click(sweep);
+    expect(sweep).toHaveAttribute('aria-selected', 'true');
   });
 
   it('announces chart values on keyboard navigation', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<Dashboard data={RESEARCH_SNAPSHOT} />);
+    await user.click(screen.getByRole('tab', { name: 'Sweep' }));
     screen.getByRole('img', { name: /sweep probability over time/i }).focus();
     await user.keyboard('{End}');
     expect(screen.getByText(/Oct 2: Polymarket 64\.0%, Kalshi 62\.0%/)).toBeInTheDocument();
