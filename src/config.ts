@@ -49,7 +49,8 @@ export const SOURCE_META = {
 
 /** Manually maintained: paywalled or no public API. Update asOf when values change. */
 export const STATIC_SOURCES: readonly Source[] = [
-  { id: 'silver', ...SOURCE_META.silver, freshness: 'static', asOf: '2026-09-26', status: 'ok', house: 0.91, senate: 0.69, sweep: null },
+  // Deluxe model, Oct 8 toplines as reported by Newsweek (Silver's own page is paywalled).
+  { id: 'silver', ...SOURCE_META.silver, freshness: 'static', asOf: '2026-10-08', status: 'ok', house: 0.931, senate: 0.748, sweep: 0.745 },
   { id: 'rtwh', ...SOURCE_META.rtwh, freshness: 'static', asOf: '2026-10-10', status: 'ok', house: 0.881, senate: 0.725, sweep: null },
 ];
 
