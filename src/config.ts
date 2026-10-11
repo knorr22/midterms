@@ -50,7 +50,7 @@ export const SOURCE_META = {
 /** Manually maintained: paywalled or no public API. Update asOf when values change. */
 export const STATIC_SOURCES: readonly Source[] = [
   { id: 'silver', ...SOURCE_META.silver, freshness: 'static', asOf: '2026-09-26', status: 'ok', house: 0.91, senate: 0.69, sweep: null },
-  { id: 'rtwh', ...SOURCE_META.rtwh, freshness: 'static', asOf: '2026-09-22', status: 'ok', house: null, senate: 0.689, sweep: null },
+  { id: 'rtwh', ...SOURCE_META.rtwh, freshness: 'static', asOf: '2026-10-10', status: 'ok', house: 0.881, senate: 0.725, sweep: null },
 ];
 
 /** Last manually verified DDHQ values; used only when both DDHQ and The Hill fetches fail. */
