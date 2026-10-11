@@ -43,6 +43,20 @@ export function impliedPhi(sweep: number, house: number, senate: number): number
   return denom === 0 ? 0 : (sweep - house * senate) / denom;
 }
 
+/**
+ * Estimates P(D House AND D Senate) from the marginals, holding P(D Senate | R House) at the value implied
+ * by an earlier published triple (`anchor`). Result is clamped to the Fréchet bounds.
+ */
+export function estimateSweep(
+  house: number,
+  senate: number,
+  anchor: { house: number; senate: number; sweep: number },
+): number {
+  const splitGivenRHouse = anchor.house < 1 ? (anchor.senate - anchor.sweep) / (1 - anchor.house) : 0;
+  const { lo, hi } = frechetBounds(house, senate);
+  return Math.min(hi, Math.max(lo, senate - (1 - house) * splitGivenRHouse));
+}
+
 /** Mean of the available market prices for a race, or null. */
 export function raceProbability(race: Pick<Race, 'kalshi' | 'polymarket'>): number | null {
   const v = [race.kalshi, race.polymarket].filter((x): x is number => x !== null);

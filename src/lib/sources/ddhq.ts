@@ -83,3 +83,20 @@ export function parseDdhq(html: string): DdhqForecast {
     senateHistory: toPoints(senate?.timeseries ?? []),
   };
 }
+
+const HillSchema = z.object({ chamber: z.enum(['house', 'senate']), officeOverview: OverviewSchema });
+
+export interface HillChamber {
+  p: number;
+  updatedAt: string | null;
+  history: Point[];
+}
+
+/** Parses The Hill's `/api/forecast/{year}/{chamber}` JSON, which republishes the DDHQ model (no joint/sweep figure). */
+export function parseHillForecast(json: unknown, chamber: 'house' | 'senate'): HillChamber {
+  const d = HillSchema.parse(json);
+  if (d.chamber !== chamber) throw new Error(`expected ${chamber}, got ${d.chamber}`);
+  const p = demProb(d.officeOverview.forecast.parties);
+  if (p === undefined) throw new Error(`${chamber}: DEM probability missing`);
+  return { p, updatedAt: d.officeOverview.forecast.updatedAt ?? null, history: toPoints(d.officeOverview.timeseries) };
+}

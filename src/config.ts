@@ -53,6 +53,14 @@ export const STATIC_SOURCES: readonly Source[] = [
   { id: 'rtwh', ...SOURCE_META.rtwh, freshness: 'static', asOf: '2026-09-22', status: 'ok', house: null, senate: 0.689, sweep: null },
 ];
 
+/** Last manually verified DDHQ values; used only when both DDHQ and The Hill fetches fail. */
+export const DDHQ_FALLBACK: Source = {
+  id: 'ddhq', ...SOURCE_META.ddhq, freshness: 'static', asOf: '2026-10-02', status: 'ok', house: 0.75, senate: 0.54, sweep: 0.52,
+};
+
+/** Last DDHQ-published House/Senate/joint triple; calibrates the sweep estimate when only marginals are available. */
+export const DDHQ_SWEEP_ANCHOR = { house: 0.75, senate: 0.54, sweep: 0.52 } as const;
+
 /** Qualitative expert ratings (no probabilities published). */
 export const EXPERT_RATINGS = [
   { name: 'Cook Political Report', house: 'Lean D', senate: 'Toss-up', asOf: '2026-09' },

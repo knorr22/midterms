@@ -13,6 +13,14 @@ function Bar({ p, tone }: { p: number | null; tone: 'dem' | 'muted' }) {
 }
 
 function SweepValue({ s }: { s: Source }) {
+  if (s.sweep !== null && s.sweepEstimated) {
+    return (
+      <span className="font-semibold text-white" title="Estimated: not published today. Derived from the House and Senate odds using the source's last published split-ticket rate.">
+        <span aria-hidden="true">≈</span>{pct(s.sweep, 1)}
+        <span className="sr-only"> (estimated)</span>
+      </span>
+    );
+  }
   if (s.sweep !== null) return <span className="font-semibold text-white">{pct(s.sweep, 1)}</span>;
   if (s.house !== null && s.senate !== null) {
     const b = frechetBounds(s.house, s.senate);

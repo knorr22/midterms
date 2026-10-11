@@ -4,6 +4,7 @@ import {
   consensus,
   correlationLift,
   daysUntil,
+  estimateSweep,
   frechetBounds,
   impliedPhi,
   independentSweep,
@@ -46,6 +47,18 @@ describe('correlation (research table)', () => {
     expect(sweep).toBeGreaterThan(independentSweep(house, senate));
     expect(correlationLift(sweep, house, senate)).toBeCloseTo(1.284, 3);
     expect(impliedPhi(sweep, house, senate)).toBeGreaterThan(0.5);
+  });
+
+  it('estimateSweep reproduces the anchor and holds P(D Senate | R House) = 8 %', () => {
+    const anchor = RESEARCH.ddhq;
+    expect(estimateSweep(anchor.house, anchor.senate, anchor)).toBeCloseTo(0.52, 10);
+    expect(estimateSweep(0.76, 0.56, anchor)).toBeCloseTo(0.56 - 0.24 * 0.08, 10);
+  });
+
+  it('estimateSweep stays within the Fréchet bounds', () => {
+    const anchor = RESEARCH.ddhq;
+    expect(estimateSweep(0.1, 0.05, anchor)).toBe(frechetBounds(0.1, 0.05).lo);
+    expect(estimateSweep(0.99, 0.9, { house: 0.5, senate: 0.5, sweep: 0.6 })).toBe(0.9);
   });
 
   it('every source with a joint value implies positive correlation', () => {

@@ -21,6 +21,8 @@ export const SourceSchema = z.object({
   senate: nullableProb,
   /** Directly published joint probability (D House AND D Senate); null if the source does not publish one. */
   sweep: nullableProb,
+  /** True when `sweep` is derived by this site rather than published by the source. */
+  sweepEstimated: z.boolean().optional(),
   volumeUsd: z.number().nonnegative().optional(),
 });
 export type Source = z.infer<typeof SourceSchema>;

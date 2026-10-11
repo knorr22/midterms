@@ -50,7 +50,10 @@ export function Hero({ data }: { data: Snapshot }) {
               range {pct(c.min)}–{pct(c.max)}
             </span>
           </p>
-          <p className="mt-1 text-sm text-muted">Mean of {c.count} sources publishing a joint probability</p>
+          <p className="mt-1 text-sm text-muted">
+            Mean of {c.count} sources publishing a joint probability
+            {withSweep.some((s) => s.sweepEstimated) && ' (≈ = estimated from House and Senate odds)'}
+          </p>
 
           <figure className="mt-8" aria-label="Sweep probability by source">
             <div className="relative h-10">
@@ -61,7 +64,7 @@ export function Hero({ data }: { data: Snapshot }) {
               {withSweep.map((s, i) => (
                 <span
                   key={s.id}
-                  title={`${s.name}: ${pct(s.sweep, 1)}`}
+                  title={`${s.name}: ${s.sweepEstimated ? '≈' : ''}${pct(s.sweep, 1)}${s.sweepEstimated ? ' (estimated)' : ''}`}
                   // Alternate above/below the track so near-identical values stay visible.
                   className={`absolute h-4 w-4 -translate-x-1/2 rounded-full border-2 border-ink ${i % 2 ? 'top-[calc(50%+1px)]' : 'top-[calc(50%-17px)]'}`}
                   style={{ left: `${(s.sweep ?? 0) * 100}%`, background: SOURCE_COLOR[s.id] }}
@@ -78,7 +81,10 @@ export function Hero({ data }: { data: Snapshot }) {
                 <span key={s.id} className="inline-flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full" style={{ background: SOURCE_COLOR[s.id] }} aria-hidden="true" />
                   <span className="text-muted">{s.name}</span>
-                  <span className="font-medium text-gray-100 tabular-nums">{pct(s.sweep, 1)}</span>
+                  <span className="font-medium text-gray-100 tabular-nums">
+                    {s.sweepEstimated && <span title="Estimated from House and Senate odds">≈</span>}
+                    {pct(s.sweep, 1)}
+                  </span>
                 </span>
               ))}
             </figcaption>

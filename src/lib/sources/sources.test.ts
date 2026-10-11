@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { findOutcome, parsePolymarketEvent, parsePolymarketHistory } from './polymarket';
 import { findByTickerSuffix, midpoint, parseKalshiCandles, parseKalshiEvent } from './kalshi';
-import { extractJsonArray, parseDdhq } from './ddhq';
+import { extractJsonArray, parseDdhq, parseHillForecast } from './ddhq';
 import { RESEARCH, RESEARCH_SNAPSHOT } from '../../test/fixtures/research';
 import { SnapshotSchema } from '../../types';
 
@@ -155,6 +155,39 @@ describe('DDHQ parser', () => {
 
   it('extractJsonArray handles brackets inside strings', () => {
     expect(extractJsonArray('x"k":[{"a":"]["},1] tail', 'k')).toEqual([{ a: '][' }, 1]);
+  });
+});
+
+describe('The Hill (DDHQ) parser', () => {
+  const senate = {
+    version: 1,
+    year: 2026,
+    chamber: 'senate',
+    officeOverview: {
+      toplineId: 3,
+      officeId: 4,
+      forecast: {
+        parties: [
+          { partyId: 2, abbrev: 'GOP', winProbability: 0.44, seats: 49 },
+          { partyId: 1, abbrev: 'DEM', winProbability: 0.56, seats: 51 },
+        ],
+        updatedAt: '2026-10-10 15:26:19.880429',
+      },
+      timeseries: [{ date: '2026-10-10', parties: [{ abbrev: 'DEM', winProbability: 0.56, seats: 51 }] }],
+    },
+    raceForecasts: [],
+  };
+
+  it('reads the DEM probability, updatedAt and history', () => {
+    const f = parseHillForecast(senate, 'senate');
+    expect(f.p).toBe(0.56);
+    expect(f.updatedAt).toBe('2026-10-10 15:26:19.880429');
+    expect(f.history).toEqual([{ t: Date.parse('2026-10-10T12:00:00Z') / 1000, p: 0.56 }]);
+  });
+
+  it('rejects a mismatched chamber or malformed payload', () => {
+    expect(() => parseHillForecast(senate, 'house')).toThrow(/expected house/);
+    expect(() => parseHillForecast({}, 'senate')).toThrow();
   });
 });
 

@@ -7,10 +7,11 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ELECTION_DATE, RACES, SOURCE_META, STATIC_SOURCES } from '../src/config';
+import { DDHQ_FALLBACK, DDHQ_SWEEP_ANCHOR, ELECTION_DATE, RACES, SOURCE_META, STATIC_SOURCES } from '../src/config';
+import { estimateSweep } from '../src/lib/analysis';
 import { findByTickerSuffix, parseKalshiCandles, parseKalshiEvent, parseKalshiEvents } from '../src/lib/sources/kalshi';
 import { findOutcome, parsePolymarketEvent, parsePolymarketHistory } from '../src/lib/sources/polymarket';
-import { parseDdhq } from '../src/lib/sources/ddhq';
+import { parseDdhq, parseHillForecast, type DdhqForecast } from '../src/lib/sources/ddhq';
 import { SnapshotSchema, type Point, type Race, type Series, type Snapshot, type Source } from '../src/types';
 
 const OUT = resolve(dirname(fileURLToPath(import.meta.url)), '../public/data/snapshot.json');
@@ -21,10 +22,12 @@ const ALLOWED_HOSTS = new Set([
   'clob.polymarket.com',
   'api.elections.kalshi.com',
   'votes.decisiondeskhq.com',
+  'elections2026.thehill.com',
 ]);
 const POLY = 'https://gamma-api.polymarket.com';
 const CLOB = 'https://clob.polymarket.com';
 const KALSHI = 'https://api.elections.kalshi.com/trade-api/v2';
+const HILL = 'https://elections2026.thehill.com/api/forecast/2026';
 
 /** GET with host allow-list, timeout, size cap and one retry. */
 async function get(url: string, as: 'json' | 'text' = 'json'): Promise<unknown> {
@@ -144,11 +147,30 @@ async function kalshi(): Promise<ProviderResult> {
   };
 }
 
-async function ddhq(): Promise<ProviderResult> {
-  const f = parseDdhq((await get(SOURCE_META.ddhq.url, 'text')) as string);
-  const asOf = f.updatedAt ? new Date(`${f.updatedAt.replace(' ', 'T').slice(0, 19)}Z`).toISOString() : new Date().toISOString();
+/** DDHQ via its media partner The Hill; used when votes.decisiondeskhq.com blocks bots. Has no sweep figure. */
+async function hill(): Promise<DdhqForecast> {
+  const house = parseHillForecast(await get(`${HILL}/house`), 'house');
+  const senate = parseHillForecast(await get(`${HILL}/senate`), 'senate');
   return {
-    source: { id: 'ddhq', ...SOURCE_META.ddhq, freshness: 'live', asOf, status: 'ok', house: f.house, senate: f.senate, sweep: f.sweep },
+    house: house.p, senate: senate.p, sweep: null,
+    updatedAt: senate.updatedAt ?? house.updatedAt,
+    houseHistory: house.history, senateHistory: senate.history,
+  };
+}
+
+async function ddhq(): Promise<ProviderResult> {
+  let f: DdhqForecast;
+  try {
+    f = parseDdhq((await get(SOURCE_META.ddhq.url, 'text')) as string);
+  } catch (e) {
+    console.warn(`ddhq direct failed (${errMsg(e)}); trying The Hill`);
+    f = await hill();
+  }
+  const asOf = f.updatedAt ? new Date(`${f.updatedAt.replace(' ', 'T').slice(0, 19)}Z`).toISOString() : new Date().toISOString();
+  const sweepEstimated = f.sweep === null;
+  const sweep = f.sweep ?? Math.round(estimateSweep(f.house, f.senate, DDHQ_SWEEP_ANCHOR) * 1000) / 1000;
+  return {
+    source: { id: 'ddhq', ...SOURCE_META.ddhq, freshness: 'live', asOf, status: 'ok', house: f.house, senate: f.senate, sweep, ...(sweepEstimated && { sweepEstimated }) },
     races: new Map(),
     history: { senate: sinceStart(f.senateHistory), house: sinceStart(f.houseHistory) },
   };
@@ -167,6 +189,12 @@ async function main(): Promise<void> {
   if (results.every((r) => r.source.status === 'error')) {
     console.error('All live sources failed; refusing to write snapshot.');
     process.exit(1);
+  }
+
+  const ddhqResult = results.find((r) => r.source.id === 'ddhq');
+  if (ddhqResult?.source.status === 'error') {
+    console.warn(`ddhq: using static fallback from ${DDHQ_FALLBACK.asOf}`);
+    ddhqResult.source = DDHQ_FALLBACK;
   }
 
   const byId = (id: string) => results.find((r) => r.source.id === id);
